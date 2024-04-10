@@ -12,6 +12,8 @@ Windows: (Google) download git for windows
 
 MacOs/Linux: install [brew](https://brew.sh/) if you don't have it, run ```brew install git```. If you got issue, google git install MacOs/Linux
 
+Check that you have Node on your device
+
 Install [node.js](https://nodejs.org/en) if you dont have on your pc.
 
 ## Installation
