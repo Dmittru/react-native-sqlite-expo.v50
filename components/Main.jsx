@@ -12,31 +12,57 @@ import {
 } from "react-native";
 import Constants from "expo-constants";
 import {
-    AddHotelDB, createOrSyncTableHotels, deleteHotelDB, dropTableHotels, getTableHotels,
+    AddHotelDB, AddResortDB,
+    createOrSyncTableHotels,
+    createOrSyncTableResorts,
+    deleteHotelDB, deleteResortDB,
+    dropTableHotels,
+    dropTableResorts,
+    getTableHotels, getTableResorts,
 } from "../lib/DatabaseActions/ActionsDB";
+import {Picker} from "@react-native-picker/picker";
 
 export default function Main({route, navigation}) {
     const {loggedInUser} = route.params;
     const [title, setTitle] = useState('');
     const [stars, setStars] = useState(0);
+    const [hotelResort, setHotelResort] = useState('')
     const [showCreateHotel, setShowCreateHotel] = useState(false);
     const [hotels, setHotels] = useState([])
     const [hotelModal, setHotelModal] = useState(false)
     const [selectedHotel, setSelectedHotel] = useState('')
+    const [showCreateResort, setShowCreateResort] = useState(false);
+    const [resortName, setResortName] = useState('')
+    const [resortPlace, setResortPlace] = useState('')
+    const [resortServices, setResortServices] = useState('')
+    const [resorts, setResorts] = useState([])
+    const [selectedResort, setSelectedResort] = useState('')
+    const [resortModal, setResortModal] = useState(false)
 
     useEffect(() => {
         // dropTableHotels();
+        // dropTableResorts();
         createOrSyncTableHotels();
-        getTableHotels(setHotels)
+        createOrSyncTableResorts();
+        getTableHotels(setHotels);
+        getTableResorts(setResorts);
     }, []);
 
-    const add = (ititle, istars) => {
-        if (!title || title === "" || !stars || stars <= 0 || stars > 5) {
+    const add = (ititle, istars, resId) => {
+        if (!title || title === "" || !stars || stars <= 0 || stars > 5 || !resId || resId === "") {
             Alert.alert('Ошибка', 'Неверно введены значения для добавления новых записей. Звёзд должно быть от 1 до 5')
             return false;
         }
-        AddHotelDB(ititle, istars)
+        AddHotelDB(ititle, istars, resId)
         getTableHotels(setHotels);
+    };
+    const addResort = (name, place, services) => {
+        if (!name || name === "" || !place || place === "" || !services || services === "") {
+            Alert.alert('Ошибка', 'Не все поля заполнены')
+            return false;
+        }
+        AddResortDB(resortPlace, resortName, resortServices)
+        getTableResorts(setResorts);
     };
 
     return (
@@ -46,7 +72,7 @@ export default function Main({route, navigation}) {
                     <Text style={styles.heading}>Expo SQlite не поддерживается в веб версии!</Text>
                 </View>
             ) : (
-                <>
+                <ScrollView>
                     <TouchableOpacity
                         style={styles.buttonSpace}
                         onPress={() => {
@@ -77,15 +103,73 @@ export default function Main({route, navigation}) {
                                 style={styles.input}
                                 value={String(stars)}
                             />
+                            <View style={{width: 300, height: 50}}>
+                                <Picker
+                                    selectedValue={hotelResort}
+                                    onValueChange={(itemValue, itemIndex) =>
+                                        setHotelResort(itemValue)
+                                    }
+                                    style={{flex: 1, position: 'absolute', left: 0, right: 0}}
+                                >
+                                    {resorts.length > 0 && resorts.map((resort) => {
+                                        return (
+                                            <Picker.Item label={`${resort.name}`} value={`${resort.id}`}/>
+                                        )
+                                    })}
+                                </Picker>
+                            </View>
                             <TouchableOpacity
                                 style={styles.buttonSpace}
                                 onPress={() => {
-                                    add(title, stars);
+                                    add(title, stars, hotelResort);
                                     setTitle("");
                                     setStars(0)
                                 }}
                             >
                                 <Text style={styles.buttonText}>Создать новый отель</Text>
+                            </TouchableOpacity>
+                        </View>
+                    }
+                    <TouchableOpacity
+                        style={styles.buttonSpace}
+                        onPress={() => {
+                            setShowCreateResort(prevState => !prevState)
+                        }}
+                    >
+                        <Text
+                            style={styles.buttonText}>{showCreateHotel ? 'Скрыть создание курорта' : 'Создать курорт'}</Text>
+                    </TouchableOpacity>
+                    {showCreateResort &&
+                        <View style={styles.inputList}>
+                            <TextInput
+                                onChangeText={(text) => setResortPlace(text)}
+                                placeholder="Место курорта"
+                                style={styles.input}
+                                value={resortPlace}
+                            />
+                            <TextInput
+                                onChangeText={(text) => setResortName(text)}
+                                placeholder="Название курорта"
+                                style={styles.input}
+                                value={resortName}
+                            />
+                            <TextInput
+                                onChangeText={(text) => setResortServices(text)}
+                                placeholder="Услуги курорта"
+                                style={styles.input}
+                                value={resortServices}
+                            />
+                            <TouchableOpacity
+                                style={styles.buttonSpace}
+                                onPress={() => {
+                                    addResort(resortPlace, resortName, resortServices);
+                                    setResortName("");
+                                    setResortPlace("");
+                                    setResortServices("");
+                                    getTableResorts(setResorts);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Создать новый курорт</Text>
                             </TouchableOpacity>
                         </View>
                     }
@@ -106,14 +190,37 @@ export default function Main({route, navigation}) {
                                             setHotelModal(true)
                                         }}
                                     >
-                                        <Text style={styles.buttonText}>{hotel.title}</Text>
-                                        <Text style={styles.buttonText}>⭐️{hotel.stars}</Text>
+                                        <Text style={styles.buttonText}>Отель</Text>
+                                        <Text style={styles.buttonLowText}>Название: {hotel.title}</Text>
+                                        <Text style={styles.buttonLowText}>⭐️{hotel.stars}</Text>
+                                        <Text style={styles.buttonLowText}>Курорт: {hotel.resort_name}</Text>
                                     </TouchableOpacity>
                                 </View>
                             )
                         }) :
                         <Text style={styles.sectionHeading}>
                             Нет ни одного отеля
+                        </Text>
+                    }
+                    {resorts && resorts.length > 0 ? resorts.map((resort) => {
+                            return (
+                                <View style={styles.hotelCard} key={resort.id}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setSelectedResort(resort.id)
+                                            setResortModal(true)
+                                        }}
+                                    >
+                                        <Text style={styles.buttonText}>Курорт</Text>
+                                        <Text style={styles.buttonLowText}>Место: {resort.place}</Text>
+                                        <Text style={styles.buttonLowText}>️Название: {resort.name}</Text>
+                                        <Text style={styles.buttonLowText}>️Услуги: {resort.services}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )
+                        }) :
+                        <Text style={styles.sectionHeading}>
+                            Нет ни одного курорта
                         </Text>
                     }
                     <Modal
@@ -146,7 +253,32 @@ export default function Main({route, navigation}) {
                             </View>
                         </View>
                     </Modal>
-                </>
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={resortModal}
+                        onRequestClose={() => {
+                            setResortModal(prevValue => !prevValue);
+                            setSelectedResort('')
+                        }}
+                    >
+                        <View style={styles.centeredView}>
+                            <View style={styles.modalView}>
+                                <Text style={styles.modalText}>Действие:</Text>
+                                <Button color={'#d70746'} title="Удалить" onPress={() => {
+                                    setSelectedResort('')
+                                    deleteResortDB(selectedResort)
+                                    getTableResorts(setResorts)
+                                    setResortModal(false);
+                                }}/>
+                                <Button color={'#b20000'} title="Закрыть" onPress={() => {
+                                    setSelectedResort('')
+                                    setResortModal(false);
+                                }}/>
+                            </View>
+                        </View>
+                    </Modal>
+                </ScrollView>
             )}
         </View>
     );
@@ -228,6 +360,11 @@ const styles = StyleSheet.create({
         color: '#1C1C1C',
         textAlign: "center",
         fontWeight: 'bold',
+    },
+    buttonLowText: {
+        fontSize: 18,
+        color: '#1C1C1C',
+        textAlign: "center",
     },
     hotelCard: {
         width: '100%',
